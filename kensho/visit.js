@@ -115,6 +115,9 @@
   }
   function inLine() { try { return !!(window.liff && liff.isInClient && liff.isInClient()); } catch (e) { return false; } }
   function enterWhenReady(code) {   // LINEの中ではLINEの名前が取れるのを少し待つ（最大2.4秒）。LINEの外ではすぐ送る
+    // 入店のたびに「送信済み」の控えを消す。同じ日の2回目の来店でも、体験の記録を送り直すため
+    // （実機 2026-11-18：2回目の来店に体験が付かなかった。重複は記録先が同じ来店への上書きとして処理する）
+    lsSet(K_SENT, '[]');
     if (!inLine()) { send('enter', code); return; }
     var waited = 0;
     (function tick() {
