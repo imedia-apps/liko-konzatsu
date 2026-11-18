@@ -350,7 +350,7 @@ function viewStatus(){
     + '</div>';
   var rows = list.map(function(s){
     var pct = s.capacity ? Math.min(100, Math.round(s.count / s.capacity * 100)) : 0;
-    return '<div class="row"><span class="nm">' + esc(s.name) + '店<small>' + esc(s.area) + 'エリア</small></span>'
+    return '<div class="row"><span class="nm">' + esc(shop(s.name)) + '<small>' + esc(s.area) + 'エリア</small></span>'
       + '<span class="cnt">' + s.count + '<small> ／ ' + (s.capacity ? s.capacity + '人' : '未設定') + '</small></span>'
       + '<span class="bar"><i class="' + s.level + '" style="width:' + pct + '%"></i></span>'
       + '<span class="stw"><span class="st ' + s.level + '">' + esc(s.label) + '</span></span>'
@@ -375,8 +375,8 @@ function viewStores(){
   var rows = S.stores.filter(function(s){ return s.active !== false; }).map(function(s){
     var v = s.capacity === '' || s.capacity == null ? '' : s.capacity;
     var st = S.saved[s.code] || '';
-    return '<div class="srow"><span><b>' + esc(s.name) + '店</b></span><span class="area t">' + esc(s.area) + '</span>'
-      + '<span>' + (admin ? '<input type="number" inputmode="numeric" min="0" max="500" value="' + esc(v) + '" data-cap="' + esc(s.code) + '" aria-label="' + esc(s.name) + '店の受入上限"> 人' : '<span class="cnt">' + (v === '' ? '未設定' : esc(v) + ' 人') + '</span>') + '</span>'
+    return '<div class="srow"><span><b>' + esc(shop(s.name)) + '</b></span><span class="area t">' + esc(s.area) + '</span>'
+      + '<span>' + (admin ? '<input type="number" inputmode="numeric" min="0" max="500" value="' + esc(v) + '" data-cap="' + esc(s.code) + '" aria-label="' + esc(shop(s.name)) + 'の受入上限"> 人' : '<span class="cnt">' + (v === '' ? '未設定' : esc(v) + ' 人') + '</span>') + '</span>'
       + '<span>' + (admin ? '<button type="button" class="save" data-save="' + esc(s.code) + '">保存</button> ' : '') + '<span class="saved" id="sv-' + esc(s.code) + '">' + esc(st) + '</span></span></div>';
   }).join('');
   return head + (admin ? '' : '<div class="msg ok">閲覧のみの権限です。変更は管理者が行います。</div>')
@@ -418,12 +418,14 @@ function loadReport(){
     if(S.page === 'report') render();
   }).catch(function(e){ if(e.message !== 'unauthorized'){ S.reportErr = '通信に失敗しました'; if(S.page === 'report') render(); } });
 }
-function storeName(code){ var n = ''; (S.stores || []).forEach(function(s){ if(s.code === code) n = s.name + '店'; }); return n || '全店'; }
+// 店名の表示。すでに「店」が入っている名前（渋谷本店・横浜2号店など）には足さない
+function shop(n){ n = String(n == null ? '' : n); return n.indexOf('店') >= 0 ? n : n + '店'; }
+function storeName(code){ var n = ''; (S.stores || []).forEach(function(s){ if(s.code === code) n = shop(s.name); }); return n || '全店'; }
 function viewReport(){
   var r = S.report, pr = periodRange(S.period);
   var periods = [['today','今日'],['last7','直近7日'],['thisweek','今週'],['lastweek','先週'],['thismonth','今月'],['lastmonth','先月']];
   var sel1 = '<select class="btn ghost" id="selPeriod" aria-label="期間">' + periods.map(function(p){ return '<option value="' + p[0] + '"' + (S.period===p[0]?' selected':'') + '>' + p[1] + '</option>'; }).join('') + '</select>';
-  var sel2 = '<select class="btn ghost" id="selStore" aria-label="店舗"><option value="">全店</option>' + (S.stores || []).filter(function(s){ return s.active !== false; }).map(function(s){ return '<option value="' + esc(s.code) + '"' + (S.rstore===s.code?' selected':'') + '>' + esc(s.name) + '店</option>'; }).join('') + '</select>';
+  var sel2 = '<select class="btn ghost" id="selStore" aria-label="店舗"><option value="">全店</option>' + (S.stores || []).filter(function(s){ return s.active !== false; }).map(function(s){ return '<option value="' + esc(s.code) + '"' + (S.rstore===s.code?' selected':'') + '>' + esc(shop(s.name)) + '</option>'; }).join('') + '</select>';
   var head = '<div class="ttl"><div><h1>来店レポート</h1><p>' + esc(fmtDate(pr.from)) + ' 〜 ' + esc(fmtDate(pr.to - 1)) + '・' + esc(storeName(S.rstore)) + '</p></div>'
     + '<div class="act">' + sel1 + sel2 + '<button type="button" class="btn" data-act="csv"' + (r ? '' : ' disabled') + '><i class="ti ti-download"></i>CSV</button></div></div>';
   if(S.reportErr) return head + '<div class="msg">' + esc(S.reportErr) + '</div>';
@@ -439,7 +441,7 @@ function viewReport(){
     + '<div class="kpi"><div class="k">混雑になった時間</div><div class="v">' + busyTxt + (r.busyMinutes == null ? '' : '<small>時間</small>') + '</div><div class="s">' + (r.busyMinutes == null ? '店舗を選ぶと表示します' : '受入上限の' + Math.round((Number(S.config.busyRatio)||0.8)*100) + '%以上') + '</div></div></div>';
   var mx = Math.max.apply(null, r.hourly.map(function(h){ return h.visits; }).concat([1]));
   var bars = r.hourly.map(function(h){ return '<div class="cb"><div class="v">' + h.visits + '</div><div class="b ' + (h.busy?'hi':'') + '" style="height:' + Math.round(h.visits / mx * 80) + '%"></div><div class="l">' + h.hour + '時</div></div>'; }).join('');
-  var ranks = r.ranking.map(function(x, i){ return '<div class="rank"><span class="n ' + (i===0 && x.visits>0?'top':'') + '">' + (i+1) + '</span><span class="nm">' + esc(x.name) + '店</span><span class="v">' + x.visits + '<small> 組</small></span></div>'; }).join('');
+  var ranks = r.ranking.map(function(x, i){ return '<div class="rank"><span class="n ' + (i===0 && x.visits>0?'top':'') + '">' + (i+1) + '</span><span class="nm">' + esc(shop(x.name)) + '</span><span class="v">' + x.visits + '<small> 組</small></span></div>'; }).join('');
   return head + kp + '<div class="two">'
     + '<div class="card"><div class="hd"><b>時間帯別の来店数（' + esc(storeName(S.rstore)) + '・期間合計）</b></div>'
     + (r.totalVisits ? '<div class="chart">' + bars + '</div><div class="foot">濃い青＝混雑（受入上限の' + Math.round((Number(S.config.busyRatio)||0.8)*100) + '%以上）になった時間帯。店舗を選んだときに表示します。</div>' : '<div class="empty">この期間の記録はありません</div>') + '</div>'
@@ -452,7 +454,7 @@ function downloadCsv(){
   var lines = [['Liko 来店レポート'], ['期間', fmtDate(pr.from) + '〜' + fmtDate(pr.to - 1)], ['店舗', storeName(S.rstore)],
     ['来店（組）', r.totalVisits], ['新規（組）', r.newVisits], ['リピート（組）', r.repeatVisits], ['リピート率（%）', r.repeatRate == null ? '' : r.repeatRate], ['平均滞在時間（分）', r.avgStayMin == null ? '' : r.avgStayMin], ['混雑になった時間（分）', r.busyMinutes == null ? '' : r.busyMinutes], [],
     ['時間帯', '来店（組）', '混雑']].concat(r.hourly.map(function(h){ return [h.hour + '時台', h.visits, h.busy ? '混雑' : '']; }))
-    .concat([[], ['店舗', '来店（組）']]).concat(r.ranking.map(function(x){ return [x.name + '店', x.visits]; }));
+    .concat([[], ['店舗', '来店（組）']]).concat(r.ranking.map(function(x){ return [shop(x.name), x.visits]; }));
   var text = '﻿' + lines.map(function(l){ return l.map(csvCell).join(','); }).join('\r\n');
   var a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([text], {type:'text/csv;charset=utf-8'}));
