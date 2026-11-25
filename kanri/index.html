@@ -389,7 +389,7 @@ function viewStores(){
       + '<span>' + (admin ? '<input type="number" inputmode="numeric" min="0" max="500" value="' + esc(v) + '" data-cap="' + esc(s.code) + '" aria-label="' + esc(shop(s.name)) + 'の受入上限"> 人' : '<span class="cnt">' + (v === '' ? '未設定' : esc(v) + ' 人') + '</span>') + '</span>'
       + '<span>' + (admin ? '<button type="button" class="save" data-save="' + esc(s.code) + '">保存</button> ' : '') + '<span class="saved" id="sv-' + esc(s.code) + '">' + esc(st) + '</span></span></div>';
   }).join('');
-  return head + (admin ? '' : '<div class="msg ok">閲覧のみの権限です。変更は管理者が行います。</div>')
+  return head
     + '<div class="card"><div class="srow head"><span>店舗</span><span>エリア</span><span>受入上限</span><span></span></div>' + rows + '</div>';
 }
 function saveStore(code){
@@ -527,7 +527,6 @@ function viewSettings(){
   var admin = S.user && S.user.role === 'admin', c = S.config || {};
   var f = function(k, label, help, step){ return '<label for="cf-' + k + '">' + esc(label) + '<small>' + esc(help) + '</small></label><input id="cf-' + k + '" type="number" step="' + step + '" value="' + esc(c[k]) + '" data-cf="' + k + '"' + (admin ? '' : ' disabled') + '>'; };
   return '<div class="ttl"><div><h1>設定</h1><p>混雑の段階と自動退店の時間を設定します</p></div></div>'
-    + (admin ? '' : '<div class="msg ok">閲覧のみの権限です。変更は管理者が行います。</div>')
     + '<div class="card"><div class="hd"><b>混雑の段階</b></div><div class="form">'
     + f('busyRatio', '混雑とする比率', '受入上限に対する在店人数の比率。0.8＝80%以上', '0.05')
     + f('midRatio', 'やや混雑とする比率', '0.5＝50%以上', '0.05')
